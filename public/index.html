@@ -1,763 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>YouTube Video Downloader</title>
-<style>
-:root{
-  --bg-1:#fef6e4;
-  --bg-2:#dff3e3;
-  --bg-3:#ffe8d6;
-  --surface:rgba(255,255,255,0.72);
-  --surface-strong:#ffffff;
-  --border:rgba(28,37,38,0.1);
-  --text:#132021;
-  --muted:#516164;
-  --accent:#ff6b2c;
-  --accent-2:#f9a825;
-  --ok:#2e7d32;
-  --shadow:0 16px 45px rgba(20,35,36,0.14);
-  --radius:22px;
-}
-
-*{
-  box-sizing:border-box;
-}
-
-body{
-  margin:0;
-  min-height:100vh;
-  font-family:"Trebuchet MS","Gill Sans MT","Century Gothic",sans-serif;
-  color:var(--text);
-  background:
-    radial-gradient(circle at 15% 20%, rgba(255,107,44,0.28), transparent 38%),
-    radial-gradient(circle at 85% 8%, rgba(249,168,37,0.32), transparent 36%),
-    radial-gradient(circle at 80% 88%, rgba(95,194,144,0.28), transparent 34%),
-    linear-gradient(140deg, var(--bg-1), var(--bg-2) 45%, var(--bg-3));
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:28px;
-}
-
-.app-shell{
-  width:min(860px,100%);
-  backdrop-filter:blur(14px);
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:calc(var(--radius) + 4px);
-  box-shadow:var(--shadow);
-  overflow:hidden;
-  animation:fade-slide .65s ease-out;
-}
-
-.hero{
-  padding:28px 32px 18px;
-  border-bottom:1px solid var(--border);
-  background:linear-gradient(110deg, rgba(255,255,255,0.75), rgba(255,255,255,0.35));
-}
-
-.eyebrow{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  font-size:12px;
-  text-transform:uppercase;
-  letter-spacing:1.25px;
-  color:#8b4f00;
-  background:rgba(255,202,84,0.28);
-  border:1px solid rgba(255,192,58,0.38);
-  padding:6px 10px;
-  border-radius:999px;
-}
-
-h1{
-  margin:12px 0 10px;
-  font-size:clamp(28px, 4.2vw, 42px);
-  letter-spacing:0.3px;
-}
-
-.subtitle{
-  margin:0;
-  color:var(--muted);
-  line-height:1.5;
-  font-size:15px;
-}
-
-.content{
-  padding:22px 32px 30px;
-}
-
-.row{
-  display:flex;
-  gap:12px;
-  align-items:center;
-  margin-bottom:12px;
-}
-
-.input-wrap{
-  flex:1;
-  position:relative;
-}
-
-input{
-  width:100%;
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:15px 16px;
-  font-size:15px;
-  color:var(--text);
-  background:var(--surface-strong);
-  box-shadow:0 6px 18px rgba(19,32,33,0.06);
-  transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;
-}
-
-input:focus{
-  outline:none;
-  border-color:rgba(255,107,44,0.7);
-  box-shadow:0 0 0 4px rgba(255,107,44,0.12), 0 8px 20px rgba(19,32,33,0.09);
-  transform:translateY(-1px);
-}
-
-button{
-  border:none;
-  border-radius:14px;
-  padding:14px 18px;
-  font-size:15px;
-  font-weight:700;
-  cursor:pointer;
-  color:#fff;
-  background:linear-gradient(140deg, var(--accent), var(--accent-2));
-  box-shadow:0 9px 22px rgba(255,107,44,0.35);
-  transition:transform .15s ease, box-shadow .15s ease, filter .2s ease;
-}
-
-button:hover{
-  transform:translateY(-2px);
-  box-shadow:0 12px 24px rgba(255,107,44,0.4);
-  filter:saturate(1.05);
-}
-
-button:active{
-  transform:translateY(0);
-}
-
-button:disabled{
-  cursor:not-allowed;
-  filter:grayscale(0.2);
-  opacity:0.75;
-  transform:none;
-}
-
-.status-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin:8px 0 14px;
-  gap:10px;
-}
-
-.status{
-  font-size:14px;
-  color:var(--muted);
-}
-
-.status.ok{
-  color:var(--ok);
-  font-weight:700;
-}
-
-.hint{
-  margin:0;
-  font-size:12px;
-  color:var(--muted);
-}
-
-#log{
-  border:1px solid var(--border);
-  border-radius:14px;
-  background:rgba(255,255,255,0.85);
-  padding:10px;
-  height:320px;
-  overflow:auto;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.8);
-}
-
-.log-item{
-  font-family:"Consolas","Lucida Console",monospace;
-  font-size:12px;
-  line-height:1.55;
-  margin:0;
-  padding:6px 8px;
-  border-radius:9px;
-  color:#334144;
-  animation:log-in .22s ease-out;
-}
-
-.log-item:nth-child(odd){
-  background:rgba(19,32,33,0.05);
-}
-
-/* Estilos para navegacion por pestañas y herramientas de edicion */
-.nav-tabs{
-  display:flex;
-  gap:8px;
-  margin-top:16px;
-}
-
-.tab-btn{
-  background:rgba(255,255,255,0.55);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:9px 16px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  box-shadow:none;
-  transition:all .2s ease;
-}
-
-.tab-btn:hover{
-  background:rgba(255,255,255,0.85);
-  transform:translateY(-1px);
-  box-shadow:none;
-}
-
-.tab-btn.active{
-  background:linear-gradient(140deg, var(--accent), var(--accent-2));
-  color:#fff;
-  border-color:transparent;
-  box-shadow:0 4px 14px rgba(255,107,44,0.35);
-}
-
-.tab-panel{
-  animation:fade-slide .3s ease-out;
-}
-
-.file-picker-wrap{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:14px;
-  background:rgba(255,255,255,0.4);
-  padding:10px 14px;
-  border-radius:14px;
-  border:1px dashed var(--border);
-}
-
-.secondary-btn{
-  background:var(--surface-strong);
-  color:var(--text);
-  border:1px solid var(--border);
-  box-shadow:0 4px 12px rgba(19,32,33,0.06);
-  white-space:nowrap;
-}
-
-.secondary-btn:hover{
-  background:#ffffff;
-  border-color:rgba(255,107,44,0.4);
-  box-shadow:0 6px 16px rgba(19,32,33,0.09);
-}
-
-.file-label{
-  font-size:13px;
-  color:var(--muted);
-  word-break:break-all;
-  font-weight:500;
-}
-
-.input-wrap label{
-  display:block;
-  font-size:12px;
-  font-weight:700;
-  color:var(--muted);
-  margin-bottom:5px;
-  text-transform:uppercase;
-  letter-spacing:0.5px;
-}
-
-.custom-select{
-  width:100%;
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:14px 16px;
-  font-size:15px;
-  color:var(--text);
-  background:var(--surface-strong);
-  box-shadow:0 6px 18px rgba(19,32,33,0.06);
-  outline:none;
-  cursor:pointer;
-}
-
-.custom-select:focus{
-  border-color:rgba(255,107,44,0.7);
-  box-shadow:0 0 0 4px rgba(255,107,44,0.12);
-}
-
-/* Modal de eleccion de formato */
-.modal-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(19,32,33,0.48);
-  backdrop-filter:blur(8px);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:1000;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .25s ease;
-}
-
-.modal-overlay.active{
-  opacity:1;
-  pointer-events:auto;
-}
-
-.modal-card{
-  background:var(--surface-strong);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  padding:28px;
-  width:min(440px, 90vw);
-  transform:translateY(16px) scale(0.96);
-  transition:transform .25s ease;
-  text-align:center;
-}
-
-.modal-overlay.active .modal-card{
-  transform:translateY(0) scale(1);
-}
-
-.modal-card h2{
-  margin:0 0 8px;
-  font-size:22px;
-}
-
-.modal-card p{
-  color:var(--muted);
-  font-size:14px;
-  margin:0 0 20px;
-}
-
-.format-options{
-  display:flex;
-  gap:14px;
-  margin-bottom:18px;
-}
-
-.format-btn{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:8px;
-  padding:16px 12px;
-  background:var(--bg-1);
-  border:2px solid var(--border);
-  border-radius:16px;
-  cursor:pointer;
-  transition:all .2s ease;
-  color:var(--text);
-  box-shadow:none;
-}
-
-.format-btn:hover{
-  border-color:var(--accent);
-  transform:translateY(-2px);
-  background:var(--bg-3);
-  box-shadow:0 8px 18px rgba(255,107,44,0.18);
-}
-
-.format-btn .icon{
-  font-size:28px;
-}
-
-.format-btn .label{
-  font-weight:700;
-  font-size:15px;
-}
-
-.format-btn .subtext{
-  font-size:11px;
-  color:var(--muted);
-}
-
-.modal-close{
-  background:transparent;
-  border:none;
-  color:var(--muted);
-  font-size:13px;
-  box-shadow:none;
-  padding:6px 12px;
-  cursor:pointer;
-}
-
-.modal-close:hover{
-  background:transparent;
-  box-shadow:none;
-  color:var(--text);
-  transform:none;
-}
-
-@keyframes fade-slide{
-  from{
-    opacity:0;
-    transform:translateY(12px);
-  }
-  to{
-    opacity:1;
-    transform:translateY(0);
-  }
-}
-
-@keyframes log-in{
-  from{
-    opacity:0;
-    transform:translateX(-6px);
-  }
-  to{
-    opacity:1;
-    transform:translateX(0);
-  }
-}
-
-@media (max-width:720px){
-  body{
-    padding:14px;
-  }
-
-  .hero,
-  .content{
-    padding-left:18px;
-    padding-right:18px;
-  }
-
-  .row{
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  button{
-    width:100%;
-  }
-
-  #log{
-    height:280px;
-  }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Video Downloader</title>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<main class="app-shell">
-  <header class="hero">
-    <span class="eyebrow">Pro Studio Mode</span>
-    <h1>YouTube Video Downloader</h1>
-    <p class="subtitle">Baja videos de YouTube, recorta fragmentos y convierte archivos de tu PC con estilo.</p>
+  <main class="app-shell">
+    <header class="hero">
+      <div class="hero-header-row">
+        <span class="eyebrow">Pro Studio Mode</span>
+        <button class="open-folder-top-btn" onclick="openDownloadsFolder()">📂 Abrir carpeta de descargas</button>
+      </div>
 
-    <!-- Navegacion por pestañas -->
-    <nav class="nav-tabs">
-      <button id="tabNavDownload" class="tab-btn active" onclick="switchTab('download')">📥 Descargar</button>
-      <button id="tabNavTrim" class="tab-btn" onclick="switchTab('trim')">✂️ Recortar Video/Audio</button>
-      <button id="tabNavConvert" class="tab-btn" onclick="switchTab('convert')">🔄 Convertir Formato</button>
-    </nav>
-  </header>
+      <h1>YouTube Video Downloader</h1>
+      <p class="subtitle">Descarga videos y audio de YouTube, recorta fragmentos y convierte formatos multimedia fácilmente.</p>
 
-  <section class="content">
-    <!-- Panel 1: Descargar YouTube -->
-    <div id="tab-download" class="tab-panel">
-      <div class="row">
-        <div class="input-wrap">
-          <input id="url" placeholder="Pega URL de YouTube" autocomplete="off">
+      <!-- Navegación por pestañas -->
+      <nav class="nav-tabs">
+        <button id="tabNavDownload" class="tab-btn active" onclick="switchTab('download')">📥 Descargar</button>
+        <button id="tabNavTrim" class="tab-btn" onclick="switchTab('trim')">✂️ Recortar Video/Audio</button>
+        <button id="tabNavConvert" class="tab-btn" onclick="switchTab('convert')">🔄 Convertir Formato</button>
+      </nav>
+    </header>
+
+    <section class="content">
+      <!-- Panel 1: Descargar YouTube -->
+      <div id="tab-download" class="tab-panel">
+        <div class="row">
+          <div class="input-wrap">
+            <input id="url" placeholder="Pega aquí la URL de YouTube..." autocomplete="off">
+          </div>
+          <button id="downloadBtn" onclick="download()">Descargar</button>
         </div>
-        <button id="downloadBtn" onclick="download()">Descargar</button>
-      </div>
-    </div>
 
-    <!-- Panel 2: Recortar Video/Audio -->
-    <div id="tab-trim" class="tab-panel" style="display:none;">
-      <div class="file-picker-wrap">
-        <button class="secondary-btn" onclick="selectFileForTrim()">📁 Seleccionar Archivo...</button>
-        <span id="trimFileLabel" class="file-label">Ningún archivo seleccionado</span>
-      </div>
-
-      <div class="row">
-        <div class="input-wrap">
-          <label>Tiempo Inicio (HH:MM:SS)</label>
-          <input id="trimStart" placeholder="00:00:00" value="00:00:00">
+        <!-- Tarjeta de vista previa automática -->
+        <div id="videoPreviewCard" class="video-preview-card" style="display: none;">
+          <img id="previewThumb" class="preview-thumb" src="" alt="Thumbnail">
+          <div class="preview-info">
+            <p id="previewTitle" class="preview-title">Cargando título...</p>
+            <p id="previewAuthor" class="preview-author">Canal</p>
+          </div>
         </div>
-        <div class="input-wrap">
-          <label>Tiempo Fin (HH:MM:SS)</label>
-          <input id="trimEnd" placeholder="00:01:00">
+      </div>
+
+      <!-- Panel 2: Recortar Video/Audio -->
+      <div id="tab-trim" class="tab-panel" style="display:none;">
+        <div class="file-picker-wrap">
+          <button class="secondary-btn" onclick="selectFileForTrim()">📁 Seleccionar Archivo...</button>
+          <span id="trimFileLabel" class="file-label">Ningún archivo seleccionado</span>
         </div>
-        <button id="trimBtn" onclick="runTrim()" style="margin-top: auto;">Recortar</button>
-      </div>
-    </div>
 
-    <!-- Panel 3: Convertir Formato -->
-    <div id="tab-convert" class="tab-panel" style="display:none;">
-      <div class="file-picker-wrap">
-        <button class="secondary-btn" onclick="selectFileForConvert()">📁 Seleccionar Archivo...</button>
-        <span id="convertFileLabel" class="file-label">Ningún archivo seleccionado</span>
-      </div>
-
-      <div class="row">
-        <div class="input-wrap">
-          <label>Formato Destino</label>
-          <select id="targetFormatSelect" class="custom-select">
-            <option value="mp3">MP3 (Audio)</option>
-            <option value="mp4">MP4 (Video)</option>
-            <option value="wav">WAV (Audio)</option>
-            <option value="mkv">MKV (Video)</option>
-            <option value="avi">AVI (Video)</option>
-            <option value="aac">AAC (Audio)</option>
-            <option value="flac">FLAC (Audio)</option>
-          </select>
+        <div class="row">
+          <div class="input-wrap">
+            <label>Tiempo Inicio (HH:MM:SS)</label>
+            <input id="trimStart" placeholder="00:00:00" value="00:00:00">
+          </div>
+          <div class="input-wrap">
+            <label>Tiempo Fin (HH:MM:SS)</label>
+            <input id="trimEnd" placeholder="00:01:00">
+          </div>
+          <button id="trimBtn" onclick="runTrim()" style="margin-top: auto;">Recortar</button>
         </div>
-        <button id="convertBtn" onclick="runConvert()" style="margin-top: auto;">Convertir Formato</button>
+      </div>
+
+      <!-- Panel 3: Convertir Formato -->
+      <div id="tab-convert" class="tab-panel" style="display:none;">
+        <div class="file-picker-wrap">
+          <button class="secondary-btn" onclick="selectFileForConvert()">📁 Seleccionar Archivo...</button>
+          <span id="convertFileLabel" class="file-label">Ningún archivo seleccionado</span>
+        </div>
+
+        <div class="row">
+          <div class="input-wrap">
+            <label>Formato Destino</label>
+            <select id="targetFormatSelect" class="custom-select">
+              <option value="mp3">MP3 (Audio)</option>
+              <option value="mp4">MP4 (Video)</option>
+              <option value="wav">WAV (Audio)</option>
+              <option value="mkv">MKV (Video)</option>
+              <option value="avi">AVI (Video)</option>
+              <option value="aac">AAC (Audio)</option>
+              <option value="flac">FLAC (Audio)</option>
+            </select>
+          </div>
+          <button id="convertBtn" onclick="runConvert()" style="margin-top: auto;">Convertir Formato</button>
+        </div>
+      </div>
+
+      <!-- Componente de Barra de Progreso % -->
+      <div id="progressContainer" class="progress-container">
+        <div class="progress-header">
+          <span id="progressText">Procesando...</span>
+        </div>
+        <div class="progress-track">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+      </div>
+
+      <!-- Estado y Controles -->
+      <div class="status-row">
+        <span id="status" class="status">Listo para trabajar.</span>
+        <button id="cancelBtn" class="cancel-btn" onclick="cancelCurrentProcess()" style="display: none;">🛑 Cancelar</button>
+      </div>
+      <p class="hint" id="statusHint">Tip: Pega la URL para ver la vista previa automática.</p>
+
+      <!-- Consola de Logs -->
+      <div id="log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Modal de Elección de Formato y Calidad -->
+  <div id="formatModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <h2>Opciones de Descarga</h2>
+      <p>Selecciona el tipo de archivo y la resolución/calidad deseada:</p>
+
+      <div class="format-options">
+        <button class="format-btn" onclick="updateQualityDropdown('mp4')">
+          <span class="icon">🎥</span>
+          <span class="label">MP4</span>
+          <span class="subtext">Video + Audio</span>
+        </button>
+
+        <button class="format-btn" onclick="updateQualityDropdown('mp3')">
+          <span class="icon">🎵</span>
+          <span class="label">MP3</span>
+          <span class="subtext">Solo Audio</span>
+        </button>
+      </div>
+
+      <div class="quality-select-wrap">
+        <label style="font-size: 12px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 6px;">CALIDAD / RESOLUCIÓN</label>
+        <select id="qualitySelect">
+          <option value="best">Máxima Calidad Disponible</option>
+          <option value="1080p">1080p (Full HD)</option>
+          <option value="720p">720p (HD)</option>
+          <option value="480p">480p (SD)</option>
+        </select>
+      </div>
+
+      <button onclick="confirmDownload(pendingFormat)">Confirmar e Iniciar Descarga</button>
+      <div style="margin-top: 10px;">
+        <button class="modal-close" onclick="closeModal()">Cancelar</button>
       </div>
     </div>
-
-    <!-- Estado y Consola de Log Común -->
-    <div class="status-row">
-      <span id="status" class="status">Listo para trabajar.</span>
-      <p class="hint" id="statusHint">Tip: Selecciona una herramienta arriba para comenzar.</p>
-    </div>
-
-    <div id="log" aria-live="polite"></div>
-  </section>
-</main>
-
-<!-- Modal de seleccion de formato para descargas -->
-<div id="formatModal" class="modal-overlay" onclick="closeModal(event)">
-  <div class="modal-card" onclick="event.stopPropagation()">
-    <h2>Formato de Descarga</h2>
-    <p>¿Cómo deseas descargar este video?</p>
-
-    <div class="format-options">
-      <button class="format-btn" onclick="confirmDownload('mp4')">
-        <span class="icon">🎥</span>
-        <span class="label">MP4</span>
-        <span class="subtext">Video + Audio</span>
-      </button>
-
-      <button class="format-btn" onclick="confirmDownload('mp3')">
-        <span class="icon">🎵</span>
-        <span class="label">MP3</span>
-        <span class="subtext">Solo Audio</span>
-      </button>
-    </div>
-
-    <button class="modal-close" onclick="closeModal()">Cancelar</button>
   </div>
-</div>
 
-<script>
-const logElement = document.getElementById('log');
-const statusElement = document.getElementById('status');
-const statusHint = document.getElementById('statusHint');
-const urlInput = document.getElementById('url');
-const downloadButton = document.getElementById('downloadBtn');
-const formatModal = document.getElementById('formatModal');
-
-// Variables de estado para archivos seleccionados
-let selectedTrimPath = '';
-let selectedConvertPath = '';
-
-function appendLog(text){
-  const line = document.createElement('p');
-  line.className = 'log-item';
-  line.textContent = text.trim() || '...';
-  logElement.appendChild(line);
-  logElement.scrollTop = logElement.scrollHeight;
-}
-
-window.api.onProgress(text=>{
-  appendLog(text);
-});
-
-// Control de Pestañas
-function switchTab(tabName){
-  document.querySelectorAll('.tab-panel').forEach(panel => panel.style.display = 'none');
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-
-  if(tabName === 'download'){
-    document.getElementById('tab-download').style.display = 'block';
-    document.getElementById('tabNavDownload').classList.add('active');
-    statusHint.textContent = 'Tip: Enter tambien abre la seleccion de formato.';
-  }else if(tabName === 'trim'){
-    document.getElementById('tab-trim').style.display = 'block';
-    document.getElementById('tabNavTrim').classList.add('active');
-    statusHint.textContent = 'Tip: Especifica tiempos en formato HH:MM:SS o segundos.';
-  }else if(tabName === 'convert'){
-    document.getElementById('tab-convert').style.display = 'block';
-    document.getElementById('tabNavConvert').classList.add('active');
-    statusHint.textContent = 'Tip: El archivo convertido se guardara en la carpeta downloads.';
-  }
-}
-
-// Pestaña 1: Descargar
-urlInput.addEventListener('keydown', event => {
-  if(event.key === 'Enter'){
-    download();
-  }
-});
-
-function openModal(){
-  formatModal.classList.add('active');
-}
-
-function closeModal(e){
-  if(!e || e.target === formatModal || e.target.classList.contains('modal-close')){
-    formatModal.classList.remove('active');
-  }
-}
-
-function download(){
-  const url = urlInput.value.trim();
-
-  if(!url){
-    statusElement.textContent = 'Pega una URL valida para continuar.';
-    statusElement.classList.remove('ok');
-    urlInput.focus();
-    return;
-  }
-
-  openModal();
-}
-
-function confirmDownload(format){
-  closeModal();
-  startDownload(format);
-}
-
-async function startDownload(format){
-  const url = urlInput.value.trim();
-  if(!url) return;
-
-  downloadButton.disabled = true;
-  statusElement.textContent = `Descargando (${format.toUpperCase()})...`;
-  statusElement.classList.remove('ok');
-  appendLog(`[START] Descarga iniciada (${format.toUpperCase()}) para: ${url}`);
-
-  try{
-    const code = await window.api.download(url, format);
-    if(code === 0){
-      statusElement.textContent = `Descarga (${format.toUpperCase()}) finalizada con exito.`;
-      statusElement.classList.add('ok');
-      appendLog(`[OK] Proceso (${format.toUpperCase()}) completado.`);
-      alert(`Descarga (${format.toUpperCase()}) finalizada`);
-    }else{
-      statusElement.textContent = 'El proceso termino con codigo: ' + code;
-      statusElement.classList.remove('ok');
-      appendLog('[WARN] El proceso devolvio codigo: ' + code);
-    }
-  }catch(error){
-    statusElement.textContent = 'Error durante la descarga.';
-    statusElement.classList.remove('ok');
-    appendLog('[ERROR] ' + (error && error.message ? error.message : String(error)));
-  }finally{
-    downloadButton.disabled = false;
-  }
-}
-
-// Pestaña 2: Recortar
-async function selectFileForTrim(){
-  const filePath = await window.api.selectFile();
-  if(filePath){
-    selectedTrimPath = filePath;
-    document.getElementById('trimFileLabel').textContent = filePath;
-    statusElement.textContent = 'Archivo seleccionado para recortar.';
-    statusElement.classList.add('ok');
-  }
-}
-
-async function runTrim(){
-  if(!selectedTrimPath){
-    statusElement.textContent = 'Selecciona un archivo multimedia primero.';
-    statusElement.classList.remove('ok');
-    return;
-  }
-
-  const startTime = document.getElementById('trimStart').value.trim();
-  const endTime = document.getElementById('trimEnd').value.trim();
-
-  const trimBtn = document.getElementById('trimBtn');
-  trimBtn.disabled = true;
-  statusElement.textContent = 'Recortando archivo...';
-  statusElement.classList.remove('ok');
-  appendLog(`[START] Recorte iniciado para: ${selectedTrimPath} (Inicio: ${startTime}, Fin: ${endTime})`);
-
-  try{
-    const result = await window.api.trimFile({ inputPath: selectedTrimPath, startTime, endTime });
-    if(result.code === 0){
-      statusElement.textContent = 'Recorte finalizado con éxito.';
-      statusElement.classList.add('ok');
-      appendLog(`[OK] Archivo recortado guardado en: ${result.outputPath}`);
-      alert('Recorte finalizado con éxito');
-    }else{
-      statusElement.textContent = 'Error al recortar. Código: ' + result.code;
-      statusElement.classList.remove('ok');
-      appendLog('[WARN] Proceso de recorte finalizado con código: ' + result.code);
-    }
-  }catch(error){
-    statusElement.textContent = 'Error durante el recorte.';
-    statusElement.classList.remove('ok');
-    appendLog('[ERROR] ' + (error && error.message ? error.message : String(error)));
-  }finally{
-    trimBtn.disabled = false;
-  }
-}
-
-// Pestaña 3: Convertir
-async function selectFileForConvert(){
-  const filePath = await window.api.selectFile();
-  if(filePath){
-    selectedConvertPath = filePath;
-    document.getElementById('convertFileLabel').textContent = filePath;
-    statusElement.textContent = 'Archivo seleccionado para conversión.';
-    statusElement.classList.add('ok');
-  }
-}
-
-async function runConvert(){
-  if(!selectedConvertPath){
-    statusElement.textContent = 'Selecciona un archivo multimedia primero.';
-    statusElement.classList.remove('ok');
-    return;
-  }
-
-  const targetFormat = document.getElementById('targetFormatSelect').value;
-  const convertBtn = document.getElementById('convertBtn');
-  convertBtn.disabled = true;
-  statusElement.textContent = `Convirtiendo a ${targetFormat.toUpperCase()}...`;
-  statusElement.classList.remove('ok');
-  appendLog(`[START] Conversión iniciada para ${selectedConvertPath} a ${targetFormat.toUpperCase()}`);
-
-  try{
-    const result = await window.api.convertFile({ inputPath: selectedConvertPath, targetFormat });
-    if(result.code === 0){
-      statusElement.textContent = `Conversión a ${targetFormat.toUpperCase()} finalizada con éxito.`;
-      statusElement.classList.add('ok');
-      appendLog(`[OK] Archivo convertido guardado en: ${result.outputPath}`);
-      alert(`Conversión a ${targetFormat.toUpperCase()} finalizada con éxito`);
-    }else{
-      statusElement.textContent = 'Error en la conversión. Código: ' + result.code;
-      statusElement.classList.remove('ok');
-      appendLog('[WARN] Proceso de conversión finalizado con código: ' + result.code);
-    }
-  }catch(error){
-    statusElement.textContent = 'Error durante la conversión.';
-    statusElement.classList.remove('ok');
-    appendLog('[ERROR] ' + (error && error.message ? error.message : String(error)));
-  }finally{
-    convertBtn.disabled = false;
-  }
-}
-
-</script>
-
+  <script src="js/app.js"></script>
 </body>
 </html>
