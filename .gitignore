@@ -1,0 +1,6 @@
+downloads/
+node_modules/
+LogModificaciones.md
+**/LogModificaciones.md
+.env
+*.exe
