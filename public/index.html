@@ -148,6 +148,27 @@
     </div>
   </div>
 
+  <!-- Overlay de Instalación de Dependencias -->
+  <div id="installerOverlay" class="installer-overlay" style="display: none;">
+    <div class="installer-card">
+      <div class="installer-icon">⚙️</div>
+      <h2>Configurando Herramientas</h2>
+      <p>Para poder descargar y procesar videos, necesitamos configurar <strong>yt-dlp</strong> y <strong>FFmpeg</strong>. Esto solo se hace una vez y tardará un momento.</p>
+      
+      <div class="installer-progress-wrap">
+        <div class="installer-progress-bar">
+          <div id="installerProgressFill" class="installer-progress-fill" style="width: 0%;"></div>
+        </div>
+        <div class="installer-status-row">
+          <span id="installerStatusText">Comprobando estado...</span>
+          <span id="installerPercentText">0%</span>
+        </div>
+      </div>
+      
+      <button id="startInstallBtn" onclick="startBinaryInstallation()" class="install-btn">Instalar Herramientas</button>
+    </div>
+  </div>
+
   <script src="js/app.js"></script>
 </body>
 </html>

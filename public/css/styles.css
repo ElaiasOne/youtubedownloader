@@ -543,3 +543,104 @@ button:disabled {
     height: 220px;
   }
 }
+
+/* Overlay de Instalación de Dependencias */
+.installer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(19, 32, 33, 0.6);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fade-in 0.3s ease-out;
+}
+
+.installer-card {
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 36px 28px;
+  width: min(500px, 92vw);
+  text-align: center;
+  animation: scale-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.installer-icon {
+  font-size: 54px;
+  margin-bottom: 16px;
+  display: inline-block;
+  animation: pulse-slow 2s infinite ease-in-out;
+}
+
+.installer-card h2 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.installer-card p {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.installer-progress-wrap {
+  background: rgba(19, 32, 33, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.installer-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(19, 32, 33, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.installer-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.installer-status-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.install-btn {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 15px;
+  border-radius: 14px;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-up {
+  from { transform: scale(0.9) translateY(10px); }
+  to { transform: scale(1) translateY(0); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}

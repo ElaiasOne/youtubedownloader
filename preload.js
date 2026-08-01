@@ -8,6 +8,12 @@ contextBridge.exposeInMainWorld('api', {
   openDownloadsFolder: () => ipcRenderer.invoke('open-downloads-folder'),
   cancelProcess: () => ipcRenderer.invoke('cancel-process'),
   fetchPreview: (url) => ipcRenderer.invoke('fetch-video-preview', url),
+  checkBinaries: () => ipcRenderer.invoke('check-binaries'),
+  downloadBinaries: () => ipcRenderer.invoke('download-binaries'),
+  onInstallProgress: (callback) => {
+    ipcRenderer.removeAllListeners('install-progress');
+    ipcRenderer.on('install-progress', (_, data) => callback(data));
+  },
   onProgress: (callback) => {
     ipcRenderer.removeAllListeners('progress');
     ipcRenderer.on('progress', (_, data) => callback(data));

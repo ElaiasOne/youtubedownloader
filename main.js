@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog, shell } = require('electron');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -75,6 +75,129 @@ ipcMain.handle('open-downloads-folder', async () => {
   }
   await shell.openPath(downloadsDir);
   return true;
+});
+
+// Helper para descargar archivos manejando redirecciones (301/302) y progreso
+function downloadFile(url, dest, onProgress) {
+  return new Promise((resolve, reject) => {
+    function startDownload(currentUrl) {
+      https.get(currentUrl, (res) => {
+        if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
+          startDownload(res.headers.location);
+          return;
+        }
+
+        if (res.statusCode !== 200) {
+          reject(new Error(`Servidor retornó código: ${res.statusCode}`));
+          return;
+        }
+
+        const totalBytes = parseInt(res.headers['content-length'], 10) || 0;
+        let downloadedBytes = 0;
+        const file = fs.createWriteStream(dest);
+
+        res.on('data', (chunk) => {
+          downloadedBytes += chunk.length;
+          if (totalBytes > 0) {
+            const percent = (downloadedBytes / totalBytes) * 100;
+            onProgress(percent);
+          }
+        });
+
+        res.pipe(file);
+
+        file.on('finish', () => {
+          file.close();
+          resolve();
+        });
+
+        file.on('error', (err) => {
+          fs.unlink(dest, () => reject(err));
+        });
+      }).on('error', (err) => {
+        fs.unlink(dest, () => reject(err));
+      });
+    }
+
+    startDownload(url);
+  });
+}
+
+// Handler para verificar si los binarios requeridos existen
+ipcMain.handle('check-binaries', async () => {
+  const ytdlpPath = path.join(__dirname, 'yt-dlp.exe');
+  const ffmpegPath = path.join(__dirname, 'ffmpeg.exe');
+  return {
+    ytDlpExists: fs.existsSync(ytdlpPath),
+    ffmpegExists: fs.existsSync(ffmpegPath)
+  };
+});
+
+// Handler para descargar e instalar los binarios que falten
+ipcMain.handle('download-binaries', async (event) => {
+  const ytdlpPath = path.join(__dirname, 'yt-dlp.exe');
+  const ffmpegPath = path.join(__dirname, 'ffmpeg.exe');
+  const zipPath = path.join(__dirname, 'ffmpeg.zip');
+  const tempDir = path.join(__dirname, 'ffmpeg_temp');
+
+  try {
+    // 1. Descargar yt-dlp si no existe
+    if (!fs.existsSync(ytdlpPath)) {
+      event.sender.send('install-progress', { status: 'Descargando yt-dlp.exe...', percent: 0 });
+      await downloadFile(
+        'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
+        ytdlpPath,
+        (percent) => {
+          event.sender.send('install-progress', { status: 'Descargando yt-dlp.exe...', percent: Math.round(percent) });
+        }
+      );
+    }
+
+    // 2. Descargar FFmpeg si no existe
+    if (!fs.existsSync(ffmpegPath)) {
+      event.sender.send('install-progress', { status: 'Descargando FFmpeg (zip)...', percent: 0 });
+      await downloadFile(
+        'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip',
+        zipPath,
+        (percent) => {
+          event.sender.send('install-progress', { status: 'Descargando FFmpeg (zip)...', percent: Math.round(percent) });
+        }
+      );
+
+      // Extraer usando PowerShell en Windows
+      event.sender.send('install-progress', { status: 'Extrayendo FFmpeg (esto puede tardar unos segundos)...', percent: 100 });
+      
+      const psCommand = `Expand-Archive -Path '${zipPath}' -DestinationPath '${tempDir}' -Force; ` +
+        `Get-ChildItem -Path '${tempDir}' -Filter 'ffmpeg.exe' -Recurse | Move-Item -Destination '${__dirname}' -Force; ` +
+        `Get-ChildItem -Path '${tempDir}' -Filter 'ffprobe.exe' -Recurse | Move-Item -Destination '${__dirname}' -Force; ` +
+        `Remove-Item -Path '${tempDir}' -Recurse -Force; ` +
+        `Remove-Item -Path '${zipPath}' -Force;`;
+
+      await new Promise((resolve, reject) => {
+        exec(`powershell -Command "${psCommand}"`, (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(`Error al descomprimir con PowerShell: ${error.message || stderr}`));
+          } else {
+            resolve();
+          }
+        });
+      });
+    }
+
+    event.sender.send('install-progress', { status: 'Instalación completada con éxito.', percent: 100 });
+    return true;
+  } catch (error) {
+    console.error('Error durante la instalación de dependencias:', error);
+    event.sender.send('install-progress', { status: `Error: ${error.message}`, percent: -1 });
+    // Limpieza en caso de error
+    if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+    if (fs.existsSync(tempDir)) {
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch (e) {}
+    }
+    return false;
+  }
 });
 
 // Handler para obtener vista previa (thumbnail y título) de un video de YouTube vía oEmbed

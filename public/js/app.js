@@ -314,3 +314,62 @@ function setRunningState(running, statusMsg) {
     statusElement.classList.remove('ok');
   }
 }
+
+// Lógica de autodescarga e instalación de binarios
+const installerOverlay = document.getElementById('installerOverlay');
+const installerProgressFill = document.getElementById('installerProgressFill');
+const installerStatusText = document.getElementById('installerStatusText');
+const installerPercentText = document.getElementById('installerPercentText');
+const startInstallBtn = document.getElementById('startInstallBtn');
+
+async function checkAndPromptBinaries() {
+  try {
+    const status = await window.api.checkBinaries();
+    if (!status.ytDlpExists || !status.ffmpegExists) {
+      installerOverlay.style.display = 'flex';
+      let missing = [];
+      if (!status.ytDlpExists) missing.push('yt-dlp');
+      if (!status.ffmpegExists) missing.push('FFmpeg');
+      installerStatusText.textContent = `Falta configurar: ${missing.join(' y ')}.`;
+      startInstallBtn.style.display = 'block';
+    } else {
+      installerOverlay.style.display = 'none';
+    }
+  } catch (e) {
+    console.error('Error comprobando binarios:', e);
+  }
+}
+
+async function startBinaryInstallation() {
+  startInstallBtn.disabled = true;
+  startInstallBtn.textContent = 'Instalando...';
+  
+  window.api.onInstallProgress(({ status, percent }) => {
+    if (percent >= 0) {
+      installerProgressFill.style.width = `${percent}%`;
+      installerPercentText.textContent = `${percent}%`;
+    }
+    installerStatusText.textContent = status;
+
+    if (percent === -1) {
+      startInstallBtn.disabled = false;
+      startInstallBtn.textContent = 'Reintentar Instalación';
+    }
+  });
+
+  try {
+    const success = await window.api.downloadBinaries();
+    if (success) {
+      setTimeout(() => {
+        installerOverlay.style.display = 'none';
+      }, 1000);
+    }
+  } catch (e) {
+    installerStatusText.textContent = 'Error al instalar herramientas: ' + e.message;
+    startInstallBtn.disabled = false;
+    startInstallBtn.textContent = 'Reintentar Instalación';
+  }
+}
+
+// Comprobar binarios al iniciar la app
+checkAndPromptBinaries();
