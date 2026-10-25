@@ -200,6 +200,25 @@ ipcMain.handle('download-binaries', async (event) => {
   }
 });
 
+// Handler para actualizar yt-dlp a la versión más reciente
+ipcMain.handle('update-ytdlp', async (event) => {
+  const ytdlpPath = path.join(__dirname, 'yt-dlp.exe');
+  if (!fs.existsSync(ytdlpPath)) {
+    return { success: false, message: 'yt-dlp.exe no encontrado.' };
+  }
+
+  return new Promise((resolve) => {
+    exec(`"${ytdlpPath}" -U`, (error, stdout, stderr) => {
+      const output = (stdout || '') + (stderr || '');
+      if (error) {
+        resolve({ success: false, message: output.trim() || error.message });
+      } else {
+        resolve({ success: true, message: output.trim() });
+      }
+    });
+  });
+});
+
 // Handler para obtener vista previa (thumbnail y título) de un video de YouTube vía oEmbed
 ipcMain.handle('fetch-video-preview', async (event, videoUrl) => {
   return new Promise((resolve) => {
@@ -314,6 +333,43 @@ ipcMain.handle('select-file', async () => {
   return result.filePaths[0];
 });
 
+// Normaliza formatos de tiempo a HH:MM:SS válido para FFmpeg
+function normalizeTimeToHHMMSS(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return null;
+  const cleaned = timeStr.trim();
+  if (!cleaned) return null;
+
+  const parts = cleaned.split(':');
+  let totalSeconds = 0;
+
+  if (parts.length === 3) {
+    const h = parseFloat(parts[0]) || 0;
+    const m = parseFloat(parts[1]) || 0;
+    const s = parseFloat(parts[2]) || 0;
+    totalSeconds = h * 3600 + m * 60 + s;
+  } else if (parts.length === 2) {
+    const m = parseFloat(parts[0]) || 0;
+    const s = parseFloat(parts[1]) || 0;
+    totalSeconds = m * 60 + s;
+  } else if (parts.length === 1) {
+    const s = parseFloat(parts[0]);
+    if (isNaN(s)) return null;
+    totalSeconds = s;
+  } else {
+    return null;
+  }
+
+  if (totalSeconds < 0 || isNaN(totalSeconds)) return null;
+
+  const secNum = Math.floor(totalSeconds);
+  const hours = Math.floor(secNum / 3600);
+  const minutes = Math.floor((secNum % 3600) / 60);
+  const seconds = secNum % 60;
+
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
 // Handler para recortar video/audio con FFmpeg
 ipcMain.handle('trim-file', async (event, { inputPath, startTime, endTime }) => {
   return new Promise((resolve) => {
@@ -321,9 +377,12 @@ ipcMain.handle('trim-file', async (event, { inputPath, startTime, endTime }) => 
     const baseName = path.basename(inputPath, ext);
     const outputPath = path.join(__dirname, 'downloads', `${baseName}_recortado${ext}`);
 
+    const normStart = normalizeTimeToHHMMSS(startTime);
+    const normEnd = normalizeTimeToHHMMSS(endTime);
+
     const ffmpegArgs = ['-y'];
-    if (startTime) ffmpegArgs.push('-ss', startTime);
-    if (endTime) ffmpegArgs.push('-to', endTime);
+    if (normStart) ffmpegArgs.push('-ss', normStart);
+    if (normEnd) ffmpegArgs.push('-to', normEnd);
     ffmpegArgs.push('-i', inputPath, '-c', 'copy', outputPath);
 
     const ffmpeg = spawn(path.join(__dirname, 'ffmpeg.exe'), ffmpegArgs);

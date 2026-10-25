@@ -4,3 +4,4 @@ LogModificaciones.md
 **/LogModificaciones.md
 .env
 *.exe
+*.old

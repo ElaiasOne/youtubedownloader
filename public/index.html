@@ -11,7 +11,10 @@
     <header class="hero">
       <div class="hero-header-row">
         <span class="eyebrow">Pro Studio Mode</span>
-        <button class="open-folder-top-btn" onclick="openDownloadsFolder()">📂 Abrir carpeta de descargas</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="updateYtDlpBtn" class="open-folder-top-btn" onclick="updateYtDlp()">🔄 Actualizar yt-dlp</button>
+          <button class="open-folder-top-btn" onclick="openDownloadsFolder()">📂 Abrir carpeta de descargas</button>
+        </div>
       </div>
 
       <h1>YouTube Video Downloader</h1>

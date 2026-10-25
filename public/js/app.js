@@ -208,6 +208,43 @@ async function selectFileForTrim() {
   }
 }
 
+// Convierte cadena de tiempo a segundos
+function parseTimeToSeconds(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return null;
+  const cleaned = timeStr.trim();
+  if (!cleaned) return null;
+
+  const parts = cleaned.split(':');
+  if (parts.length === 3) {
+    const h = parseFloat(parts[0]);
+    const m = parseFloat(parts[1]);
+    const s = parseFloat(parts[2]);
+    if (isNaN(h) || isNaN(m) || isNaN(s)) return null;
+    return Math.max(0, h * 3600 + m * 60 + s);
+  } else if (parts.length === 2) {
+    const m = parseFloat(parts[0]);
+    const s = parseFloat(parts[1]);
+    if (isNaN(m) || isNaN(s)) return null;
+    return Math.max(0, m * 60 + s);
+  } else if (parts.length === 1) {
+    const s = parseFloat(parts[0]);
+    if (isNaN(s)) return null;
+    return Math.max(0, s);
+  }
+  return null;
+}
+
+// Convierte segundos a formato HH:MM:SS
+function formatSecondsToHHMMSS(totalSeconds) {
+  if (totalSeconds === null || totalSeconds === undefined || isNaN(totalSeconds)) return '00:00:00';
+  const secNum = Math.floor(totalSeconds);
+  const hours = Math.floor(secNum / 3600);
+  const minutes = Math.floor((secNum % 3600) / 60);
+  const seconds = secNum % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
 async function runTrim() {
   if (!selectedTrimPath) {
     statusElement.textContent = 'Selecciona un archivo multimedia primero.';
@@ -215,8 +252,41 @@ async function runTrim() {
     return;
   }
 
-  const startTime = document.getElementById('trimStart').value.trim();
-  const endTime = document.getElementById('trimEnd').value.trim();
+  const startRaw = document.getElementById('trimStart').value.trim();
+  const endRaw = document.getElementById('trimEnd').value.trim();
+
+  const startSec = startRaw ? parseTimeToSeconds(startRaw) : 0;
+  if (startSec === null) {
+    statusElement.textContent = 'Formato inválido en Tiempo Inicio. Usa HH:MM:SS o MM:SS.';
+    statusElement.classList.remove('ok');
+    return;
+  }
+
+  if (!endRaw) {
+    statusElement.textContent = 'Especifica el tiempo final del recorte.';
+    statusElement.classList.remove('ok');
+    return;
+  }
+
+  const endSec = parseTimeToSeconds(endRaw);
+  if (endSec === null) {
+    statusElement.textContent = 'Formato inválido en Tiempo Fin. Usa HH:MM:SS o MM:SS.';
+    statusElement.classList.remove('ok');
+    return;
+  }
+
+  if (endSec <= startSec) {
+    statusElement.textContent = 'El tiempo final debe ser mayor al tiempo inicial.';
+    statusElement.classList.remove('ok');
+    return;
+  }
+
+  const startTime = formatSecondsToHHMMSS(startSec);
+  const endTime = formatSecondsToHHMMSS(endSec);
+
+  // Auto-ajustar inputs en pantalla si tenían overflow (ej. 00:60:00 -> 01:00:00)
+  document.getElementById('trimStart').value = startTime;
+  document.getElementById('trimEnd').value = endTime;
 
   setRunningState(true, 'Recortando archivo...');
   updateProgress(20, 'Procesando recorte con FFmpeg...');
@@ -299,6 +369,33 @@ async function cancelCurrentProcess() {
 // Abrir carpeta de descargas
 async function openDownloadsFolder() {
   await window.api.openDownloadsFolder();
+}
+
+// Actualizar yt-dlp a la última versión
+async function updateYtDlp() {
+  const updateBtn = document.getElementById('updateYtDlpBtn');
+  if (updateBtn) updateBtn.disabled = true;
+  statusElement.textContent = 'Buscando actualizaciones para yt-dlp...';
+  appendLog('[INFO] Comprobando y actualizando yt-dlp.exe...');
+
+  try {
+    const result = await window.api.updateYtDlp();
+    if (result && result.success) {
+      statusElement.textContent = 'yt-dlp actualizado correctamente.';
+      statusElement.classList.add('ok');
+      appendLog(`[OK] ${result.message}`);
+    } else {
+      statusElement.textContent = 'No se pudo actualizar yt-dlp.';
+      statusElement.classList.remove('ok');
+      appendLog(`[WARN] ${result ? result.message : 'Error desconocido'}`);
+    }
+  } catch (error) {
+    statusElement.textContent = 'Error al actualizar yt-dlp.';
+    statusElement.classList.remove('ok');
+    appendLog(`[ERROR] ${error.message || error}`);
+  } finally {
+    if (updateBtn) updateBtn.disabled = false;
+  }
 }
 
 // Control del estado global de ejecución
